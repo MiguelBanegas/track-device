@@ -81,5 +81,7 @@ export function useLocations() {
     stats,
     fetchLocations,
     fetchLastLocation,
+    setLocations,
+    setLastLocation,
   };
 }

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import Filters from "./components/Filters";
 import MapDisplay from "./components/MapDisplay";
 import PointsTable from "./components/PointsTable";
+import RouteUploader from "./components/RouteUploader";
 import { formatBsAsDateTime } from "./utils/formatters";
 
 import "./App.css";
@@ -24,6 +25,7 @@ export default function App() {
   const [limit, setLimit] = useState(200);
   const [isLive, setIsLive] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState(null);
+  const [uploadedData, setUploadedData] = useState(null);
 
   const {
     locations,
@@ -36,11 +38,36 @@ export default function App() {
     stats,
     fetchLocations,
     fetchLastLocation,
+    setLocations,
+    setLastLocation,
   } = useLocations();
+
+  const handleFileUpload = (data) => {
+    if (!data.routePoints || !Array.isArray(data.routePoints)) {
+      alert("El archivo no contiene un formato de recorrido válido (falta routePoints)");
+      return;
+    }
+
+    const mappedLocations = data.routePoints.map(p => ({
+      lat: p.latitude,
+      lon: p.longitude,
+      recorded_at: new Date(p.timestamp).toISOString(),
+      speed: p.speed,
+      altitude: p.altitude
+    }));
+
+    setLocations(mappedLocations);
+    setUploadedData(data);
+    if (data.id) setDeviceId(`Archivo: ${data.id}`);
+    if (mappedLocations.length > 0) {
+      setLastLocation(mappedLocations[mappedLocations.length - 1]);
+    }
+  };
 
   const handleFetch = (e) => {
     if (e) e.preventDefault();
     setSelectedPoint(null);
+    setUploadedData(null);
     fetchLocations({ deviceId, from, to, limit });
   };
 
@@ -132,7 +159,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
+      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
         <Filters 
           deviceId={deviceId} setDeviceId={setDeviceId}
           from={from} setFrom={setFrom}
@@ -141,6 +168,7 @@ export default function App() {
           onFetch={handleFetch}
           loading={loading}
         />
+        <RouteUploader onUpload={handleFileUpload} />
       </div>
 
       {error && (
@@ -166,14 +194,27 @@ export default function App() {
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="panel glass" style={{ height: 'fit-content' }}>
-            <div className="stat-card-header">Info del Dispositivo</div>
-            <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', display: 'grid', gap: '0.5rem' }}>
-              <div><strong>ID:</strong> {deviceId}</div>
-              <div><strong>Filtro:</strong> {count} puntos</div>
-              <div><strong>Distancia:</strong> {stats.totalKm.toFixed(2)} km</div>
-              <div><strong>Última Sinc:</strong> {lastUpdated ? formatBsAsDateTime(lastUpdated) : '—'}</div>
-              <div><strong>Status:</strong> {loading ? 'Cargando...' : 'Sincronizado'}</div>
-            </div>
+            <div className="stat-card-header">{uploadedData ? 'Info de Recorrido' : 'Info del Dispositivo'}</div>
+            {uploadedData ? (
+              <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', display: 'grid', gap: '0.5rem' }}>
+                <div><strong>ID:</strong> {uploadedData.id}</div>
+                <div><strong>Inicio:</strong> {formatBsAsDateTime(new Date(uploadedData.startTime).toISOString())}</div>
+                <div><strong>Fin:</strong> {formatBsAsDateTime(new Date(uploadedData.endTime).toISOString())}</div>
+                <div><strong>Distancia:</strong> {uploadedData.distance.toFixed(2)} km</div>
+                <div><strong>T. Conducción:</strong> {uploadedData.drivingTime} min</div>
+                <div><strong>T. Parado:</strong> {uploadedData.stoppedTime} min</div>
+                <div><strong>Vel. Máxima:</strong> {uploadedData.maxSpeed} km/h</div>
+                <div><strong>Vel. Promedio:</strong> {uploadedData.avgSpeed} km/h</div>
+              </div>
+            ) : (
+              <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)', display: 'grid', gap: '0.5rem' }}>
+                <div><strong>ID:</strong> {deviceId}</div>
+                <div><strong>Filtro:</strong> {count} puntos</div>
+                <div><strong>Distancia:</strong> {stats.totalKm.toFixed(2)} km</div>
+                <div><strong>Última Sinc:</strong> {lastUpdated ? formatBsAsDateTime(lastUpdated) : '—'}</div>
+                <div><strong>Status:</strong> {loading ? 'Cargando...' : 'Sincronizado'}</div>
+              </div>
+            )}
           </div>
         </div>
       </main>

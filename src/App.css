@@ -404,3 +404,30 @@ body {
   box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
   filter: brightness(1.1);
 }
+
+/* Upload Area */
+.upload-area {
+  margin-top: 1rem;
+  border: 2px dashed var(--glass-border);
+  border-radius: 1rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.upload-area:hover,
+.upload-area.drag-active {
+  background: rgba(45, 212, 191, 0.05);
+  border-color: var(--primary);
+  transform: scale(1.01);
+}
+
+.upload-area svg {
+  transition: transform 0.3s ease;
+}
+
+.upload-area:hover svg {
+  transform: translateY(-5px);
+}
